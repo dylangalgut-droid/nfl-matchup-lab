@@ -3,7 +3,58 @@
   const depth = {behind:'Behind the line', short:'Short (0–9 yards)', intermediate:'Intermediate (10–19 yards)', deep:'Deep (20+ yards)', unknown:'Unknown depth'};
   const side = {left:'Left', middle:'Middle', right:'Right', unknown:'Unknown direction'};
   const concepts = {is_screen_pass:'Screen', is_play_action:'Play-action', is_rpo:'Run-pass option', other:'None of these designs'};
-  let data;
+  let data, selected;
+  function playerDetail(key, profiles, code, oppCode, defensive) {
+    const section = get('players');
+    section.replaceChildren();
+    function add(tag, value) {
+      const el = document.createElement(tag);
+      el.textContent = value;
+      section.append(el);
+    }
+    if (!key) { add('p', 'Select a throw type to see the players targeted on those throws.'); return; }
+    if (defensive && !oppCode) {
+      const game = data.games.filter(g => String(g.season) === get('season').value && g.status === 'scheduled' &&
+        [g.home,g.away].includes(code) && Date.parse(g.kickoff) >= Date.parse(data.updatedAt)).sort((a,b)=>a.kickoff.localeCompare(b.kickoff))[0];
+      if (game) oppCode = game.home === code ? game.away : game.home;
+    }
+    const off = defensive ? oppCode : code, def = defensive ? code : oppCode;
+    add('h3', label(key) + (off ? ' · ' + off + ' receivers' : ' · Receivers'));
+    if (!off) { add('p','Choose a comparison offence to see its receivers.'); return; }
+    const defence = profiles.defence?.[def], league = sumLeague(profiles.defence || {});
+    function ypt(record) {
+      const v = record?.groups[key];
+      return v && v[1] === v[2] && v[0] ? v[3]/v[0] : null;
+    }
+    const edge = difference(ypt(defence), ypt(league));
+    const denom = profiles.offence?.[off]?.groups[key]?.[0];
+    const seasonGames = new Set(data.games.filter(g=>String(g.season)===get('season').value && g.boxVerified).map(g=>g.id));
+    const appearances = {};
+    for (const row of data.stats) {
+      if (row.team===off && seasonGames.has(row.game) && (row.targets>0 || row.carries>0 || row.attempts>0))
+        appearances[row.player] = (appearances[row.player] || 0) + 1;
+    }
+    const members = new Map(data.players.map(p=>[p.id,p]));
+    const entries = Object.entries(profiles.receivers?.[off] || {}).filter(([,v])=>v[key]>0)
+      .sort((a,b)=>b[1][key]-a[1][key]);
+    if (!entries.length) { add('p','No recorded player targets of this type for this team and season.'); return; }
+    add('p',edge === null ? 'Ranked by observed targets. Choose a defence with coverage to see the matchup.' :
+      def+' allows '+fmt(edge,false,true)+' yards per target versus the NFL on these throws ('+
+      defence.groups[key][0]+' defensive targets). '+(Math.abs(edge)<.05?'Neutral matchup.':edge>0?'Positive exposure highlights receivers who could benefit.':'Negative exposure highlights receivers facing a tougher matchup.'));
+    add('p','Yardage exposure equals this player’s targets of the selected type per game with a target, carry or pass attempt × the defensive difference per target. It describes this season’s matchup. The weekly model discounts small samples and accounts for other factors.');
+    const wrap = document.createElement('div'); wrap.className='pass-scroll';
+    const table = document.createElement('table'); wrap.append(table); section.append(wrap);
+    table.createTHead().append(tableRow('th',['Player','Targets of this type','Share of team’s type','Yardage exposure / game','Current roster']));
+    const body = table.createTBody();
+    for (const [id,v] of entries) {
+      const p = members.get(id);
+      const tr = tableRow('td',[p?.name || id,v[key],fmt(ratio(v[key]*100,denom),true),fmt(edge!==null && appearances[id] ? edge*v[key]/appearances[id] : null,false,true),
+        p?.activeRoster && p.team===off ? (p.injury || 'On roster') : 'Membership unconfirmed / former']);
+      if (edge !== null && Math.abs(edge)>=.05) tr.cells[3].className=edge>0?'more':'less';
+      if (v[key] === entries[0][1][key] && edge !== null && Math.abs(edge)>=.05) tr.cells[0].className=edge>0?'more':'less';
+      body.append(tr);
+    }
+  }
   function choices(select, values, initial) {
     const previous = select.value;
     select.replaceChildren(...values.map(([id, name]) => new Option(name,id)));
@@ -57,6 +108,7 @@
     const denom = group === 'concept' ? 'charted' : 'all';
     const table = get('table');
     table.replaceChildren();
+    playerDetail(null, profiles, code, oppCode, defensive);
     get('unit-label').hidden = !defensive && !oppCode;
     if (!team?.groups[denom]?.[0]) {
       get('summary').textContent = 'No verified targets with this coverage for the selected team and season.';
@@ -84,13 +136,24 @@
         [label(k),targets,fmt(frequency,true),fmt(share(league,k,denom),true),catches];
       if (oppCode) values.push(defensive ? fmt(share(opponent,k,denom),true) :
         fmt(difference(yards(opponent,k),yards(compareLeague,k)),false,true));
-      return {values,order:(defensive?delta:frequency) ?? -Infinity,delta};
+      return {key:k,values,order:(defensive?delta:frequency) ?? -Infinity,delta};
     });
     rows.sort((a,b)=>b.order-a.order || a.values[0].localeCompare(b.values[0]));
     for (const row of rows) {
       const tr = tableRow('td',row.values);
       if (defensive && Math.abs(row.delta)>=.05) tr.cells[5].className=row.delta>0?'more':'less';
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = row.values[0];
+      button.setAttribute('aria-pressed',String(selected===row.key));
+      tr.cells[0].replaceChildren(button);
+      tr.onclick = () => {
+        selected = row.key;
+        body.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+        playerDetail(selected, profiles, code, oppCode, defensive);
+        get('players').scrollIntoView({block:'nearest'});
+      };
       body.append(tr);
+      if (selected === row.key) playerDetail(selected, profiles, code, oppCode, defensive);
     }
   }
   window.NFLPassing = {mount(snapshot) {

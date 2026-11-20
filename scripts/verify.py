@@ -33,6 +33,10 @@ def verify():
                         assert sum(v[i] for k,v in groups.items() if k.startswith(dimension)) == total
             totals.append(league)
         assert totals[0] == totals[1]
+        for team, record in profile['offence'].items():
+            receivers = profile['receivers'][team].values()
+            for key, values in record['groups'].items():
+                assert sum(groups.get(key, 0) for groups in receivers) == values[0]
     cells = picks = 0
     for key, filename in data["model"]["weeks"].items():
         assert filename == f"weeks/{key}.json"

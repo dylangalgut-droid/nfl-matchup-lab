@@ -125,7 +125,9 @@ def plays_and_zones(pbp, games_by_id, counts=None, charts=None):
         if play['play_type'] == 'no_play' or number(play['two_point_attempt']) == 1:
             continue
         if counts is not None and play.get('posteam') in (g['home'],g['away']) and play.get('receiver_player_id'):
-            add_target(counts[gid, play['posteam']],play,charts.get((gid,play['play_id'])))
+            chart = charts.get((gid, play['play_id']))
+            add_target(counts[gid, play['posteam']], play, chart)
+            add_target(counts[gid, play['posteam'], play['receiver_player_id']], play, chart)
         if number(play['touchdown']) == 1:
             scorer = play['td_player_id']
             if scorer:
@@ -165,6 +167,7 @@ def add_season(stats_file, pbp_file, games, matched, players, counts, charts):
         s['rush_rec_yards'] = None if None in (run, rec) else run + rec
         s.update(tds=None if gid in unknown_scorer else tds[key],
                  red_zone_carries=red_runs[key], red_zone_targets=red_targets[key])
+        s['_throws'] = counts.get((gid, team, pid), {})
         stats.append(s)
         if (s['carries'] or 0) + (s['attempts'] or 0) + (s['targets'] or 0) > 0:
             covered[gid].add(team)
@@ -292,6 +295,14 @@ def get_data():
         stats.extend(add_season(sources['stats'+str(year)],sources['pbp'+str(year)],
                                 [g for g in games if g['season']==year], matched, players, counts, charts))
         profiles[str(year)] = season_profiles([g for g in games if g['season']==year],counts)
+        any_verified = {g["id"]: g["boxVerified"] for g in games}
+        receiving = {}
+        for (gid, team, *player), groups in counts.items():
+            if player and groups and any_verified.get(gid):
+                dest = receiving.setdefault(team, {}).setdefault(player[0], {})
+                for key, values in groups.items():
+                    dest[key] = dest.get(key, 0) + values[0]
+        profiles[str(year)]['receivers'] = receiving
     ids,roster_weeks = roster_lookup(sources['roster'],team_codes,players)
     if sources['roster'] and len(roster_weeks)<32:
         raise ValueError('Incomplete weekly roster coverage')
@@ -346,6 +357,8 @@ def main():
     from model import analyse
     data = get_data()
     data['model'] = analyse(data)
+    for row in data['stats']:
+        row.pop('_throws', None)
     data.pop('_weeklyRosters',None)
     if OUTPUT.exists():
         preserve_verified(data,json.loads(OUTPUT.read_bytes()))

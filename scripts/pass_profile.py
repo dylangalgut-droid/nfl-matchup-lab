@@ -45,3 +45,46 @@ def season_profiles(games, counts):
                     for i, v in enumerate(values):
                         bucket[i] += v
     return out
+
+
+def merge_groups(dest, groups):
+    for key, values in groups.items():
+        total = dest.setdefault(key, [0, 0, 0, 0])
+        for i, value in enumerate(values):
+            total[i] += value
+
+
+def relative_efficiency(defence, league, key):
+    """Extra yards per target beyond the defence's overall receiving efficiency."""
+    def premium(group):
+        d, l = defence.get(group), league.get(group)
+        if not d or not l or not d[0] or not l[0] or d[1] != d[2] or l[1] != l[2]:
+            return None
+        return d[3]/d[0] - l[3]/l[0]
+    reference = 'charted' if key.startswith('concept/') else 'all'
+    broad, specific = premium(reference), premium(key)
+    if broad is None or specific is None:
+        return 0
+    n = defence[key][0]
+    return (specific - broad) * n/(n+40)
+
+
+def receiver_adjustment(rows, defence, league):
+    volume = {}
+    for row in rows:
+        for key, values in row.get('_throws', {}).items():
+            volume[key] = volume.get(key, 0) + values[0]
+    targets = volume.get('all', 0)
+    if not targets or not rows:
+        return 0
+    def effect(keys):
+        return sum(volume[k] * relative_efficiency(defence, league, k) for k in keys)
+    zones = [k for k in volume if k.startswith('zone/') and 'unknown' not in k]
+    zone_effect = effect(zones)
+    designs = [k for k in volume if k.startswith('concept/')]
+    design_n = sum(volume[k] for k in designs)
+    # Overlapping labels share a fixed fraction of the weight for charted targets.
+    charted = volume.get('charted', 0)
+    blend = .2 * charted / targets if design_n else 0
+    combined = (1-blend)*zone_effect + (blend * effect(designs)*targets/design_n if design_n else 0)
+    return max(-5, min(5, .35 * combined/len(rows) * targets/(targets+20)))

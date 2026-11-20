@@ -68,10 +68,16 @@ select{max-width:100%}
 .workload-note{margin-top:8px;color:#a3b9cf;font-size:13px}.workload-note summary{color:#a5d2ce;cursor:pointer}.workload-note[open] summary{margin-bottom:5px}
 
 .pass-scroll{overflow-x:auto;margin:0 1rem 1rem}
-#pass-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-#pass-table th,#pass-table td{padding:.65rem .8rem;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
-#pass-table th:first-child,#pass-table td:first-child{text-align:left}
-#pass-table th{color:var(--muted);font-size:.85rem}
-#pass-table .more{color:var(--green)}#pass-table .less{color:var(--red)}
+#page-passing table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+#page-passing table th,#page-passing table td{padding:.65rem .8rem;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+#page-passing table th:first-child,#page-passing table td:first-child{text-align:left}
+#page-passing table th{color:var(--muted);font-size:.85rem}
+#page-passing table .more{color:var(--green)}#page-passing table .less{color:var(--red)}
 #page-passing .disclosure p{color:var(--muted);margin:.8rem 1rem}#page-passing a{color:var(--primary)}
 @media(max-width:760px){.sidebar-nav{overflow-x:auto}.nav-link{flex-shrink:0}}
+
+#pass-players{padding:1rem;margin:1rem}
+#pass-players p{line-height:1.5}
+#pass-players .pass-scroll{margin:0}
+#pass-table button{font:inherit;color:inherit;background:transparent;border:1px solid var(--line);border-radius:.4rem;padding:.35rem .65rem;cursor:pointer}
+#pass-table button[aria-pressed=true],#pass-table button:focus-visible{outline:2px solid var(--green)}

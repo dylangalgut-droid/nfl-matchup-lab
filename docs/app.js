@@ -202,8 +202,8 @@
       $('performance-metrics').innerHTML = '<p class="audit-note">Insufficient earlier and later player-games for a verified chronological evaluation.</p>';
       return;
     }
-    const headers = ['Statistic','Player-games','Model MAE','Average MAE','Model RMSE','Average RMSE','Direction correct','Directional sample'];
-    const vals = r => [statBy(r.stat)?.label || r.stat, nfmt(r.n,0), nfmt(r.mae,2), nfmt(r.baselineMae,2), nfmt(r.rmse,2), nfmt(r.baselineRmse,2),Number.isFinite(r.directionalAccuracy) ? nfmt(r.directionalAccuracy) + '%' : '—',nfmt(r.directionalN,0)];
+    const headers = ['Statistic','Player-games','Model MAE','Without throw mix MAE','Average MAE','Model RMSE','Average RMSE','Direction correct','Directional sample'];
+    const vals = r => [statBy(r.stat)?.label || r.stat, nfmt(r.n,0), nfmt(r.mae,2), nfmt(r.withoutThrowMae,2), nfmt(r.baselineMae,2), nfmt(r.rmse,2), nfmt(r.baselineRmse,2),Number.isFinite(r.directionalAccuracy) ? nfmt(r.directionalAccuracy) + '%' : '—',nfmt(r.directionalN,0)];
     const window = model.testWindow;
     const range = window?.first && window?.last ? '<p class="audit-note">' + escape(window.weeks + ' evaluated weeks · ' + formatDate(window.first,fullDay) + ' to ' + formatDate(window.last,fullDay)) + '</p>' : '';
     $('performance-metrics').innerHTML = range + '<div class="performance-panel-scroll" role="region" tabindex="0" aria-label="Backtest results, scroll for all metrics"><table class="allow-table perf"><thead><tr>' + headers.map(h => '<th scope="col">' + h + '</th>').join('') +

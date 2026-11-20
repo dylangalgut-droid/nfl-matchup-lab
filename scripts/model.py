@@ -115,11 +115,16 @@ class Bucket:
         return self.total / self.n if self.n else None
 
 
+from pass_profile import merge_groups, receiver_adjustment
+
+
 class ErrorScore:
     def __init__(self):
+        self.without_ae = 0
         self.n = self.ae = self.se = self.base_ae = self.base_se = self.directional = self.correct = 0
 
-    def record(self, actual, base, projected):
+    def record(self, actual, base, projected, without=None):
+        self.without_ae += abs((projected if without is None else without) - actual)
         err = projected - actual
         naive = base - actual
         self.n += 1
@@ -134,6 +139,7 @@ class ErrorScore:
     def report(self, stat):
         n = self.n
         return dict(stat=stat, n=n, mae=round(self.ae/n, 3) if n else None,
+                    withoutThrowMae=round(self.without_ae/n, 3) if n else None,
                     baselineMae=round(self.base_ae/n, 3) if n else None,
                     rmse=round(sqrt(self.se/n), 3) if n else None,
                     baselineRmse=round(sqrt(self.base_se/n), 3) if n else None,
@@ -322,7 +328,7 @@ METHODS = [
     {"title":"Forecast construction","body":"The baseline is the player’s last 12 eligible games within a year, with at least three measured values. The forecast adds 35% of the shrunk role allowance, 27% of the shrunk opponent-adjusted difference, 10% of the shrunk yards-per-opportunity difference at the player’s usual volume, 16% of the last-three change, a capped pass/rush volume adjustment, and small capped shifts for recent carries, target share or scoring-area involvement when available. Opponent adjustments compare each prior opponent’s result with their own prior baseline. Volume uses pass attempts and rushes allowed as a pace and game-script proxy. Touchdown adjustments are reduced by 45%."},
     {"title":"Scoring, workload and venue","body":"Touchdowns scored exclude passing touchdowns thrown. Scoring is infrequent, so this view has lower confidence. Carries, targets, target share and red-zone involvement are shown where available. Team pace uses pass/rush volume rather than seconds per play. Venue, line injuries and defensive injuries are context. For an upcoming open-air game with forecast gusts of 25+ mph, passing and receiving yardage are conservatively trimmed 1–2.5% of baseline. This estimate is unvalidated. Unknown or closed roofs receive no adjustment."},
     {"title":"Injury treatment","body":"Current availability applies only to the team’s next upcoming game within eight days. An explicitly absent same-position teammate can affect a projection when at least three recent games fall on each side of the teammate’s recorded involvement, with recent overlap. The model discounts that difference heavily and caps it at 10% of baseline or half the signal threshold, whichever is larger. A missing qualifying line is a workload proxy and does not prove that a player was inactive. Without observed evidence the numerical adjustment is zero. Historical injury and weather adjustments are untested."},
-    {"title":"Walk-forward comparison","body":"Each week freezes at its first scheduled kickoff, or the snapshot timestamp if earlier. Only verified games at least 24 hours before that cutoff enter training. Historical roles use each player’s earlier history. Metrics compare forecasts and trailing player averages on the same later qualifying player-games with available results. MAE is mean absolute error, RMSE weights large errors more. Directional accuracy compares the sign of predicted and actual change from baseline, excluding exact ties. The baseline always forecasts no change. Results cover all eligible forecasts, including small unflagged changes, and are conditional on later participation."},
+    {"title":"Walk-forward comparison","body":"Each week freezes at its first scheduled kickoff, or the snapshot timestamp if earlier. Only verified games at least 24 hours before that cutoff enter training. Receiving and rush + receiving yardage include a capped throw-mix adjustment. Earlier same-team targets weight opponent yards per target versus league by depth and direction, relative to overall defensive efficiency. Charted play designs share up to 20% of that weight. Small samples are discounted. The without-throw-mix column removes just this adjustment. Historical roles use each player’s earlier history. Metrics compare forecasts and trailing player averages on the same later qualifying player-games with available results. MAE is mean absolute error, RMSE weights large errors more. Directional accuracy compares the sign of predicted and actual change from baseline, excluding exact ties. The baseline always forecasts no change. Results cover all eligible forecasts, including small unflagged changes, and are conditional on later participation."},
     {"title":"Interpreting selections","body":"An above- or below-average signal must exceed a market-specific minimum movement as well as 4% of baseline. Signal strength describes production relative to the player’s usual average. It does not estimate the chance of beating a bookmaker line, the odds, or expected value."},
 ]
 
@@ -399,6 +405,7 @@ def forecast_member(member, foe, game, week, histories, own_team, leader, state,
     line_note = health_note(injuries, (team, foe)) if live else ""
     if save and line_note:
         member_out["context"] = line_note
+    mix = receiver_adjustment(team_rows, state.throw_defences.get(foe, {}), state.throw_league)
     for stat, (_, unit, positions, minimum) in MARKETS.items():
         if pos not in positions or is_out:
             continue
@@ -410,8 +417,11 @@ def forecast_member(member, foe, game, week, histories, own_team, leader, state,
         if projection is None:
             continue
         core, diff, n, components = projection
+        without = core
+        adjustment = mix if stat in ("receiving_yards", "rush_rec_yards") else 0
+        core = max(0, core + adjustment)
         if actual and number(actual, stat) is not None:
-            metrics[stat].record(actual[stat], base, core)
+            metrics[stat].record(actual[stat], base, core, without)
         if not save:
             continue
         amount, mate = (injury_change(stat, team_rows, own_team, histories, when)
@@ -448,6 +458,8 @@ def forecast_member(member, foe, game, week, histories, own_team, leader, state,
         if line_note:
             reasons.append(line_note)
         info = describe(stat, role, diff, n, components, mate, amount, rows)
+        if abs(adjustment) >= .05:
+            info = info.rstrip('.') + f"; the player’s target mix against this defence contributes {adjustment:+.1f} yards."
         member_out["flags"].append(dict(stat=stat, baseline=round(base, 3), projected=round(prediction, 3),
                                         delta=round(delta, 3), direction="Favourable" if delta > 0 else "Unfavourable",
                                         explanation=info, limitations=" ".join(reasons), n=n, playerN=len(values)))
@@ -500,6 +512,13 @@ def analyse(data):
         for _, row, _, _ in training:
             history[row["player"]].append(row)
         state = WeeklyState(training, (entry for entry in logs if entry[0] <= last_allowed), cutoff)
+        state.throw_defences, state.throw_league = defaultdict(dict), {}
+        for prior in finals:
+            if cutoff - timedelta(days=365) <= stamp(prior['kickoff']) <= last_allowed:
+                for row in boxes[prior['id']].values():
+                    throws = row.get('_throws', {})
+                    merge_groups(state.throw_defences[row['opponent']], throws)
+                    merge_groups(state.throw_league, throws)
         near_current = any(g["season"] == data["season"] and
                            ((stamp(g.get("kickoff")) or now) >= now or g["status"] in ("in_progress","unconfirmed"))
                            for g in week_games)
