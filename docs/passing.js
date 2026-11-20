@@ -115,10 +115,19 @@
       get('summary').textContent = 'No verified targets with this coverage for the selected team and season.';
       return;
     }
+    const designPerGame = group === 'concept' && unit === 'game';
+    function designSample(record) {
+      if (record?.designSample) return record.designSample;
+      if (record?.groups.charted?.[0] && record.groups.charted[0] === record.groups.all?.[0]) return record;
+      return {games:0, groups:{}};
+    }
+    const designLeague = records => sumLeague(Object.values(records).map(designSample));
+    const benchmark = designPerGame ? designLeague(teams) : league;
+    const opponentBenchmark = designPerGame ? designLeague(opposite) : compareLeague;
     const n = team.groups[denom][0], total = team.groups.all[0];
     get('summary').textContent = code + ' · ' + team.games + ' verified games · ' + (denom==='charted' ? n+' of '+total+' targets charted' : n+' targeted throws') + '. ' +
       (defensive ? 'Sorted by yards above or below the league average.' : 'Sorted by the share of throws aimed at each type.') +
-      (group === 'concept' && unit === 'game' && (defensive || oppCode) ? ' Per-game yardage is unavailable for partially charted play designs.' : '');
+      (group === 'concept' && unit === 'game' && (defensive || oppCode) ? ' Design averages use fully charted team-games. '+code+': '+designSample(team).games+' of '+team.games+'; NFL: '+benchmark.games+' of '+league.games+'.' : '');
     get('summary').textContent += ' Select any number to see the receivers.';
     const measure = unit==='game'?'yd/game':'yd/catch';
     const headers = defensive ? ['Throw type','Catches','Targets',code+' '+measure,'NFL '+measure,'Difference'] :
@@ -127,17 +136,16 @@
     table.createTHead().append(tableRow('th',headers));
     const body = table.createTBody();
     function yards(record,key) {
-      if (group==='concept' && unit==='game' && record?.groups.charted?.[0] !== record?.groups.all?.[0]) return null;
-      return yardage(record,key,unit);
+      return yardage(designPerGame ? designSample(record) : record,key,unit);
     }
     const rows = Object.keys(league.groups).filter(k=>k.startsWith(group+'/')).map(k=>{
       const [targets,catches] = team.groups[k] || zero;
-      const avg = yards(team,k), nfl = yards(league,k), delta = difference(avg,nfl);
+      const avg = yards(team,k), nfl = yardage(benchmark,k,unit), delta = difference(avg,nfl);
       const frequency = share(team,k,denom);
       const values = defensive ? [label(k),catches,targets,fmt(avg),fmt(nfl),fmt(delta,false,true)] :
         [label(k),targets,fmt(frequency,true),fmt(share(league,k,denom),true),catches];
       if (oppCode) values.push(defensive ? fmt(share(opponent,k,denom),true) :
-        fmt(difference(yards(opponent,k),yards(compareLeague,k)),false,true));
+        fmt(difference(yards(opponent,k),yardage(opponentBenchmark,k,unit)),false,true));
       return {key:k,values,order:(defensive?delta:frequency) ?? -Infinity,delta};
     });
     rows.sort((a,b)=>b.order-a.order || a.values[0].localeCompare(b.values[0]));

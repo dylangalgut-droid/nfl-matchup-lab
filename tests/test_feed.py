@@ -5,10 +5,22 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+from pass_profile import season_profiles
 from update import make_games, plays_and_zones, preserve_verified
 
 
 class SourceIntegrityTests(unittest.TestCase):
+    def test_design_sample_excludes_partial_games_and_counts_zero_screen_games(self):
+        games = [dict(id=i, home='A', away='B', boxVerified=True) for i in range(3)]
+        counts = {(i,'A'): {'all':[2,1,1,12], 'charted':[2,1,1,12]} for i in range(3)}
+        counts[0,'A']['concept/is_screen_pass'] = [1,1,1,12]
+        counts[2,'A'].update({'charted':[1,1,1,12], 'concept/is_screen_pass':[1,1,1,12]})
+        profiles = season_profiles(games, counts)
+        for mode, team in [('offence','A'), ('defence','B')]:
+            record = profiles[mode][team]
+            self.assertEqual(record['designSample'], {'games':2,'groups':{'concept/is_screen_pass':[1,1,1,12]}})
+            self.assertEqual(record['groups']['concept/is_screen_pass'][3], 24)
+
     def test_tbd_never_uses_placeholder_and_mismatched_scores_are_unverified(self):
         row = dict(game_id='g1', espn='91', season='2026', week='18', game_type='REG',
                    gameday='2027-01-10', gametime='13:00', away_score='14',home_score='10',

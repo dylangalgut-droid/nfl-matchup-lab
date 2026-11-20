@@ -38,12 +38,14 @@ def season_profiles(games, counts):
         for off, defense in [(g['home'],g['away']),(g['away'],g['home'])]:
             stats = counts.get((g['id'],off),{})
             for mode,team in [('offence',off),('defence',defense)]:
-                record = out.setdefault(mode,{}).setdefault(team,{'games':0,'groups':{}})
+                record = out.setdefault(mode,{}).setdefault(team,{'games':0,'groups':{},'designSample':{'games':0,'groups':{}}})
                 record['games'] += 1
-                for key, values in stats.items():
-                    bucket = record['groups'].setdefault(key,[0,0,0,0])
-                    for i, v in enumerate(values):
-                        bucket[i] += v
+                merge_groups(record['groups'], stats)
+                targets = stats.get('all', [0])[0]
+                if targets and targets == stats.get('charted', [0])[0]:
+                    sample = record['designSample']
+                    sample['games'] += 1
+                    merge_groups(sample['groups'], {k:v for k,v in stats.items() if k.startswith('concept/')})
     return out
 
 
