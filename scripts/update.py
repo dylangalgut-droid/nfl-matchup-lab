@@ -1,4 +1,5 @@
 """Download public NFL feeds, build a verified snapshot, replace the published file atomically."""
+from pass_profile import add_target, season_profiles
 import csv
 import gzip
 import io
@@ -110,7 +111,7 @@ def make_games(schedule, events):
     return games, matches
 
 
-def plays_and_zones(pbp, games_by_id):
+def plays_and_zones(pbp, games_by_id, counts=None, charts=None):
     touchdowns, rz_runs, rz_targets = Counter(), Counter(), Counter()
     complete, unknown_scorer = set(), set()
     for play in rows(pbp):
@@ -123,6 +124,8 @@ def plays_and_zones(pbp, games_by_id):
             complete.add(gid)
         if play['play_type'] == 'no_play' or number(play['two_point_attempt']) == 1:
             continue
+        if counts is not None and play.get('posteam') in (g['home'],g['away']) and play.get('receiver_player_id'):
+            add_target(counts[gid, play['posteam']],play,charts.get((gid,play['play_id'])))
         if number(play['touchdown']) == 1:
             scorer = play['td_player_id']
             if scorer:
@@ -139,9 +142,9 @@ def plays_and_zones(pbp, games_by_id):
     return complete, unknown_scorer, touchdowns, rz_runs, rz_targets
 
 
-def add_season(stats_file, pbp_file, games, matched, players):
+def add_season(stats_file, pbp_file, games, matched, players, counts, charts):
     game_index = {g['id']: g for g in games}
-    complete, unknown_scorer, tds, red_runs, red_targets = plays_and_zones(pbp_file, game_index)
+    complete, unknown_scorer, tds, red_runs, red_targets = plays_and_zones(pbp_file, game_index, counts, charts)
     stats, keys = [], set()
     covered = defaultdict(set)
     for row in rows(stats_file):
@@ -267,6 +270,7 @@ def get_data():
         # In the off-season next season's stats do not exist until the first games finish.
         optional = year == season and not any(r['season']==str(year) and r['home_score'] for r in schedule)
         jobs['stats'+str(year)] = (RELEASE+f'stats_player/stats_player_week_{year}.csv',optional)
+        jobs['chart'+str(year)] = (RELEASE+f'ftn_charting/ftn_charting_{year}.csv',True)
         jobs['pbp'+str(year)] = (RELEASE+f'pbp/play_by_play_{year}.csv.gz',optional)
     with ThreadPoolExecutor(max_workers=6) as pool:
         fetches = {k:pool.submit(download,*v) for k,v in jobs.items()}
@@ -281,9 +285,13 @@ def get_data():
         events.update({e['id']:e for e in json.loads(sources['events'+str(y)])['events']})
     games, matched = make_games(schedule, events)
     players,stats = {},[]
+    profiles = {}
     for year in seasons:
+        counts = defaultdict(dict)
+        charts = {(c['nflverse_game_id'],c['nflverse_play_id']):c for c in rows(sources['chart'+str(year)])}
         stats.extend(add_season(sources['stats'+str(year)],sources['pbp'+str(year)],
-                                [g for g in games if g['season']==year], matched, players))
+                                [g for g in games if g['season']==year], matched, players, counts, charts))
+        profiles[str(year)] = season_profiles([g for g in games if g['season']==year],counts)
     ids,roster_weeks = roster_lookup(sources['roster'],team_codes,players)
     if sources['roster'] and len(roster_weeks)<32:
         raise ValueError('Incomplete weekly roster coverage')
@@ -302,7 +310,7 @@ def get_data():
     weekly.update(archived_rosters(sources['roster']))
     return dict(season=season,updatedAt=iso(datetime.now(timezone.utc)),games=games,teams=teams,
                 players=list(players.values()),_weeklyRosters=weekly,
-                stats=stats,injuries=injuries,coverage=[
+                stats=stats,injuries=injuries,passProfiles=profiles,coverage=[
         dict(source='nflverse schedule + ESPN scoreboard',detail=f'{len(games)} regular-season and playoff fixtures across {seasons[0]}–{season}. TBD kickoffs remain blank.',url='https://github.com/nflverse/nfldata'),
         dict(source='nflverse player stats and play-by-play',detail=f'{verified} boxes reconciled against ESPN finals, schedule scores and end-of-game play totals. TDs use credited scorers. Red-zone opportunity uses the opponent 20-yard line.',url='https://github.com/nflverse/nflverse-data'),
         dict(source='nflverse weekly rosters',detail=f'{len(roster_weeks)} teams at their latest published roster week. Active, exempt and reserve players included. Practice squad players require elevation.',url='https://github.com/nflverse/nflverse-data/releases/tag/weekly_rosters'),

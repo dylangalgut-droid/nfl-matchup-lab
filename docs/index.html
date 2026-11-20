@@ -17,6 +17,7 @@
       <nav class="sidebar-nav" aria-label="Main navigation">
         <button class="nav-link active" data-page="defence"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V9m6 11V4m6 16v-7m6 7V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span>Defence by role</span></button>
         <button class="nav-link" data-page="matchups"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="m3 7 8-4 10 4v9l-10 5-8-5V7Zm8-4v9m-8-5 8 5 10-5m-10 5v9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span>Game matchups</span><span class="nav-counter" id="nav-count">0</span></button>
+        <button class="nav-link" data-page="passing"><span class="nav-icon" aria-hidden="true">◎</span><span>Passing tendencies</span></button>
         <button class="nav-link" data-page="performance"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V11h5v9H3Zm7 0V5h5v15h-5Zm7 0v-8h4v8h-4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span>Model performance</span></button>
         <button class="nav-link" data-page="bets"><span class="nav-icon">＋</span><span>Bet tracker</span></button>
       </nav>
@@ -55,6 +56,19 @@
           <div class="heatmap-toolbar"><label>Week <select class="week-picker"></select></label><label>Melbourne day <select class="day-picker"></select></label><label>Fixture <select id="game-picker"></select></label><label>Signal <select id="direction"><option value="">Both directions</option><option>Favourable</option><option>Unfavourable</option></select></label><label>Statistic <select id="signal-stat"></select></label></div>
           <div id="signal-list" class="signals"></div></section>
         </section>
+        <section class="page hidden" id="page-passing">
+          <div class="hero"><h1>Passing <em>tendencies.</em></h1><p>Compare the throws an offence uses with the receiving yards a defence allows on the same throws. Field direction shows where the pass went. Slot alignment is unavailable in these feeds.</p></div>
+          <section class="panel">
+            <div class="heatmap-toolbar"><label>Season<select id="pass-season"></select></label>
+            <label>View<select id="pass-view"><option value="defence">Defensive allowances</option><option value="offence">Offensive throw mix</option></select></label>
+            <label>Team<select id="pass-team"></select></label><label>Compare opponent<select id="pass-opp"></select></label>
+            <label>Throw types<select id="pass-group"><option value="depth">Target depth</option><option value="side">Field direction</option><option value="zone">Depth × direction</option><option value="concept">Charted play design</option></select></label>
+            <label id="pass-unit-label">Yardage measure<select id="pass-unit"><option value="catch">Yards per reception</option><option value="game">Yards per game</option></select></label></div>
+            <p id="pass-summary" class="heatmap-intro" aria-live="polite"></p>
+            <div class="pass-scroll" tabindex="0" role="region" aria-label="Passing tendencies comparison"><table id="pass-table"></table></div>
+          </section>
+          <details class="panel disclosure"><summary>Definitions &amp; coverage</summary><p>Includes passes with an identified intended receiver in verified final games across the selected season, including playoffs. Depth is air yards to the target. Receiving yards include the catch and yards gained afterwards. Left, middle and right describe the destination of a throw. The feeds used here do not identify where the receiver lined up, so a throw over the middle cannot establish a slot reception.</p><p>Each defensive difference uses the league average for that throw type. Per-game figures include games with zero catches of that type. Offensive shares include incompletions and interceptions with an identified target. Screen, play-action and RPO can overlap. Their shares use only targets with all three charting flags available. A dash indicates insufficient data.</p><p>Play-by-play from <a href="https://github.com/nflverse/nflverse-data">nflverse</a>. Play-design figures derived from FTN Data via nflverse and shared under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.</p></details>
+        </section>
         <section class="page hidden" id="page-performance">
           <div class="hero"><div class="eyebrow"><span class="eyebrow-rule"></span>HISTORICAL MODEL AUDIT</div><h1>Model <em>performance.</em></h1><p>Compare the model’s pre-game estimates with a simple player-average forecast on the same player-games.</p></div>
           <section class="panel"><div class="panel-head"><div><div class="section-kicker">CHRONOLOGICAL BACKTEST</div><h2>Out-of-sample results</h2></div></div><div id="performance-metrics"></div></section>
@@ -70,6 +84,7 @@
     </main>
   </div>
   <script defer src="./tracker.js"></script>
+  <script defer src="./passing.js"></script>
   <script defer src="./app.js"></script>
 </body>
 </html>

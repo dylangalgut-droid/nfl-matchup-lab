@@ -14,6 +14,25 @@ def verify():
     results = {(row["game"], row["player"]) for row in data["stats"]}
     assert len(results) == len(data["stats"]) and results
     assert all(games[g]["boxVerified"] and games[g]["status"] == "final" for g, _ in results)
+    for season, profile in data['passProfiles'].items():
+        finals = sum(g['boxVerified'] for g in games.values() if g['season'] == int(season))
+        if not finals:
+            continue
+        totals = []
+        for mode in ('offence', 'defence'):
+            records = profile[mode].values()
+            assert sum(record['games'] for record in records) == 2 * finals
+            league = [0,0,0,0]
+            for record in records:
+                groups = record['groups']
+                targets, catches, measured, yards = groups['all']
+                assert targets >= catches >= measured >= 0 and targets > 0
+                for i, total in enumerate(groups['all']):
+                    league[i] += total
+                    for dimension in ('depth/', 'side/', 'zone/'):
+                        assert sum(v[i] for k,v in groups.items() if k.startswith(dimension)) == total
+            totals.append(league)
+        assert totals[0] == totals[1]
     cells = picks = 0
     for key, filename in data["model"]["weeks"].items():
         assert filename == f"weeks/{key}.json"

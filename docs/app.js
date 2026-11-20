@@ -48,7 +48,7 @@
   const empty = (copy) => '<p class="empty-view">' + escape(copy) + '</p>';
   function pageFromHash() {
     const hash = location.hash.slice(1);
-    return ['defence','matchups','performance','bets'].includes(hash) ? hash : 'defence';
+    return ['defence','matchups','passing','performance','bets'].includes(hash) ? hash : 'defence';
   }
   function navigate() {
     const page = pageFromHash();
@@ -273,6 +273,7 @@
     render();
     renderPerformance();
     renderCoverage();
+    window.NFLPassing?.mount(data);
     window.NFLTracker?.mount($('bet-tracker'), data);
   }
   let refreshing = false;
