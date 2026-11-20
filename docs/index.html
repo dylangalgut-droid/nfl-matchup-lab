@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#080f1b">
   <meta name="description" content="NFL defensive allowances, weekly player projections, model backtests and a private bet tracker.">
   <title>Matchup Lab — NFL Defensive Intelligence</title>
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=receiver-dialog-1">
   <link rel="stylesheet" href="./tracker.css">
 </head>
 <body>
@@ -66,7 +66,7 @@
             <label id="pass-unit-label">Yardage measure<select id="pass-unit"><option value="catch">Yards per reception</option><option value="game">Yards per game</option></select></label></div>
             <p id="pass-summary" class="heatmap-intro" aria-live="polite"></p>
             <div class="pass-scroll" tabindex="0" role="region" aria-label="Passing tendencies comparison"><table id="pass-table"></table></div>
-            <section id="pass-players" class="panel" aria-live="polite"></section>
+            <dialog id="pass-detail" aria-labelledby="pass-detail-title"><form method="dialog"><button aria-label="Close receiver details">Close</button></form><section id="pass-players"></section></dialog>
           </section>
           <details class="panel disclosure"><summary>Definitions &amp; coverage</summary><p>Includes passes with an identified intended receiver in verified final games across the selected season, including playoffs. Depth is air yards to the target. Receiving yards include the catch and yards gained afterwards. Left, middle and right describe the destination of a throw. The feeds used here do not identify where the receiver lined up, so a throw over the middle cannot establish a slot reception.</p><p>Each defensive difference uses the league average for that throw type. Per-game figures include games with zero catches of that type. Offensive shares include incompletions and interceptions with an identified target. Screen, play-action and RPO can overlap. Their shares use only targets with all three charting flags available. A dash indicates insufficient data.</p><p>Play-by-play from <a href="https://github.com/nflverse/nflverse-data">nflverse</a>. Play-design figures derived from FTN Data via nflverse and shared under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.</p></details>
         </section>
@@ -85,7 +85,7 @@
     </main>
   </div>
   <script defer src="./tracker.js"></script>
-  <script defer src="./passing.js"></script>
+  <script defer src="./passing.js?v=receiver-dialog-1"></script>
   <script defer src="./app.js"></script>
 </body>
 </html>

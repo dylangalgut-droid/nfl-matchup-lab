@@ -81,3 +81,12 @@ select{max-width:100%}
 #pass-players .pass-scroll{margin:0}
 #pass-table button{font:inherit;color:inherit;background:transparent;border:1px solid var(--line);border-radius:.4rem;padding:.35rem .65rem;cursor:pointer}
 #pass-table button[aria-pressed=true],#pass-table button:focus-visible{outline:2px solid var(--green)}
+
+#pass-table tbody td {padding:0}
+#pass-table td button {width:100%;min-height:44px;text-align:inherit;padding:.65rem .8rem;border:0}
+#pass-table tr.pass-selected,#pass-table tbody tr:hover {background:var(--panel)}
+#pass-detail {color:inherit;background:#111927;border:1px solid var(--line);border-radius:.75rem;width:min(58rem,94vw);max-width:94vw;max-height:85vh;overflow:auto;padding:1rem}
+#pass-detail::backdrop {background:rgba(0,0,0,.65)}
+#pass-detail form {position:sticky;top:0;text-align:right}
+#pass-detail form button {cursor:pointer;color:#fff;background:#26364a;border:1px solid var(--line);padding:.5rem 1rem;border-radius:.4rem}
+#pass-detail #pass-players {padding:0;margin:0}

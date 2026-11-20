@@ -10,6 +10,7 @@
     function add(tag, value) {
       const el = document.createElement(tag);
       el.textContent = value;
+      if (tag === 'h3') el.id = 'pass-detail-title';
       section.append(el);
     }
     if (!key) { add('p', 'Select a throw type to see the players targeted on those throws.'); return; }
@@ -108,7 +109,7 @@
     const denom = group === 'concept' ? 'charted' : 'all';
     const table = get('table');
     table.replaceChildren();
-    playerDetail(null, profiles, code, oppCode, defensive);
+
     get('unit-label').hidden = !defensive && !oppCode;
     if (!team?.groups[denom]?.[0]) {
       get('summary').textContent = 'No verified targets with this coverage for the selected team and season.';
@@ -118,6 +119,7 @@
     get('summary').textContent = code + ' · ' + team.games + ' verified games · ' + (denom==='charted' ? n+' of '+total+' targets charted' : n+' targeted throws') + '. ' +
       (defensive ? 'Sorted by yards above or below the league average.' : 'Sorted by the share of throws aimed at each type.') +
       (group === 'concept' && unit === 'game' && (defensive || oppCode) ? ' Per-game yardage is unavailable for partially charted play designs.' : '');
+    get('summary').textContent += ' Select any number to see the receivers.';
     const measure = unit==='game'?'yd/game':'yd/catch';
     const headers = defensive ? ['Throw type','Catches','Targets',code+' '+measure,'NFL '+measure,'Difference'] :
       ['Throw type','Targets',code+' share','NFL share','Catches'];
@@ -142,18 +144,22 @@
     for (const row of rows) {
       const tr = tableRow('td',row.values);
       if (defensive && Math.abs(row.delta)>=.05) tr.cells[5].className=row.delta>0?'more':'less';
-      const button = document.createElement('button');
-      button.type = 'button'; button.textContent = row.values[0];
-      button.setAttribute('aria-pressed',String(selected===row.key));
-      tr.cells[0].replaceChildren(button);
-      tr.onclick = () => {
-        selected = row.key;
-        body.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-        playerDetail(selected, profiles, code, oppCode, defensive);
-        get('players').scrollIntoView({block:'nearest'});
-      };
+      Array.from(tr.cells).forEach((cell, i) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = row.values[i];
+        button.setAttribute('aria-label', row.values[0] + ' · ' + headers[i] + ' ' + row.values[i] + ' · Show receivers');
+        button.setAttribute('aria-haspopup','dialog');
+        button.onclick = () => {
+          selected = row.key;
+          for (const item of body.rows) item.classList.toggle('pass-selected',item === tr);
+          playerDetail(selected, profiles, code, oppCode, defensive);
+          get('detail').showModal();
+        };
+        cell.replaceChildren(button);
+      });
+      tr.classList.toggle('pass-selected', selected === row.key);
       body.append(tr);
-      if (selected === row.key) playerDetail(selected, profiles, code, oppCode, defensive);
     }
   }
   window.NFLPassing = {mount(snapshot) {
