@@ -1,0 +1,37 @@
+"""Validate all public snapshot files before they are eligible for publication."""
+import json
+import math
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1] / "docs"
+
+def verify():
+    data = json.loads((ROOT / "data.json").read_bytes())
+    teams = {team["id"] for team in data["teams"]}
+    assert len(teams) == 32
+    games = {game["id"]: game for game in data["games"]}
+    assert len(games) == len(data["games"])
+    results = {(row["game"], row["player"]) for row in data["stats"]}
+    assert len(results) == len(data["stats"]) and results
+    assert all(games[g]["boxVerified"] and games[g]["status"] == "final" for g, _ in results)
+    cells = picks = 0
+    for key, filename in data["model"]["weeks"].items():
+        assert filename == f"weeks/{key}.json"
+        week = json.loads((ROOT / filename).read_bytes())
+        for role in week["cells"].values():
+            for stat in role.values():
+                for team, cell in stat.items():
+                    assert team in teams and 0 < cell["n"] <= cell["leagueN"]
+                    assert abs(cell["diff"] - (cell["avg"] - cell["league"])) < .002
+                    cells += 1
+        for player in week["players"]:
+            assert player["game"] in games and player["team"] in teams
+            for pick in player["flags"]:
+                assert all(math.isfinite(pick[k]) for k in ("baseline", "projected", "delta"))
+                assert pick["explanation"]
+                picks += 1
+    assert cells and any(row["n"] for row in data["model"]["performance"])
+    print(f'{len(teams)} teams, {len(games)} fixtures, {len(results)} player results, {cells} allowances and {picks} flagged player markets verified.')
+
+if __name__ == "__main__":
+    verify()

@@ -1,0 +1,45 @@
+.nfl-tracker{--bt-bg:#101c2d;--bt-line:#26384d;--bt-text:#eaf4fc;--bt-muted:#a1b3c7;--bt-accent:#83ead9;color:var(--bt-text);font-size:1rem;min-width:0}
+.nfl-tracker h2,.nfl-tracker h3,.nfl-tracker p{margin:0}
+.bt-summary,.bt-panel{border:1px solid var(--bt-line);border-radius:14px;background:var(--bt-bg);margin-bottom:1.15rem}
+.bt-summary{display:grid;grid-template-columns:1fr 1fr 1.6fr;padding:1.15rem 0}
+.bt-summary>div{padding:0 1.25rem;display:flex;align-items:flex-start;flex-direction:column;gap:.2rem;min-width:0}
+.bt-summary>div+div{border-left:1px solid var(--bt-line)}
+.bt-summary strong{font-size:1.6rem;letter-spacing:-.05em;line-height:1.25}
+.bt-summary small,.bt-record-head small{font-size:.78rem;color:var(--bt-muted)}
+.bt-summary small:first-child{font-weight:730;letter-spacing:.07em}
+.bt-record-summary span{margin:.35rem 0;line-height:1.8}
+.bt-panel{padding:clamp(1rem,2.2vw,1.6rem)}
+.nfl-tracker h2{font-size:1.35rem;letter-spacing:-.032em}
+.nfl-tracker h3{font-size:1.09rem;line-height:1.5;overflow-wrap:anywhere}
+.bt-muted,.bt-record p,.bt-correction p{color:var(--bt-muted);font-size:.9rem}
+.nfl-tracker .bt-muted,.bt-record p,.bt-correction p{margin:.4rem 0 1rem}
+.bt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}
+.nfl-tracker label{display:flex;flex-direction:column;gap:.35rem;color:#c7d6e5;font-size:.88rem;font-weight:600;min-width:0}
+.nfl-tracker :is(input:not([type=file]),select){width:100%;min-width:0;max-width:100%;border:1px solid #34465c;color:var(--bt-text);background-color:#0b1524;border-radius:7px;padding:.65rem .75rem;font:inherit;color-scheme:dark}
+.nfl-tracker input::placeholder{color:#8e9eb0}
+.nfl-tracker select{padding-right:2rem}
+.nfl-tracker .bt-summary input{width:auto;font-size:.82rem;padding:.3rem .5rem}
+.nfl-tracker :is(button,input,select):focus-visible{outline:2px solid var(--bt-accent);outline-offset:2px}
+.bt-wide{grid-column:span 2}
+.bt-actions,.bt-section-head,.bt-record-head{display:flex;gap:.65rem;align-items:center;flex-wrap:wrap}
+.bt-section-head,.bt-record-head{justify-content:space-between;align-items:flex-start}
+.bt-actions{margin-top:.7rem}
+.bt-section-head .bt-actions{margin:0}
+.nfl-tracker button{width:auto;min-height:38px;padding:.45rem .8rem;border:1px solid #345365;border-radius:7px;background:#193344;color:#cefcf3;font:inherit;font-weight:650;font-size:.87rem;cursor:pointer}
+.nfl-tracker button:hover{filter:brightness(1.16)}
+.nfl-tracker button.bt-primary{background:var(--bt-accent);color:#0c2a2a;border-color:transparent}
+.nfl-tracker button.bt-text{background:transparent;border-color:transparent;color:#a4b9d0}
+.bt-leg{min-width:0;margin:1rem 0 .5rem;border:1px solid var(--bt-line);border-radius:9px;padding:.8rem 1rem;background:#0d1827}
+.bt-leg legend{padding:0 .4rem;color:var(--bt-accent);font-weight:700;font-size:.88rem}
+.bt-leg .bt-text{margin-top:.4rem}
+.bt-record{border-top:1px solid var(--bt-line);padding:1rem 0}
+.bt-record ul{margin:.4rem 0;padding-left:1.25rem;font-size:.9rem}
+.bt-record li{margin-bottom:.5rem}
+.bt-record li small{display:block;color:var(--bt-muted);margin-top:.15rem}
+.bt-status{border:1px solid var(--bt-line);border-radius:6px;padding:.15rem .55rem;font-size:.82rem;font-weight:700}
+.s-won{color:#90ecd2}.s-lost{color:#f7a0a8}.s-review{color:#f5ca83}.s-void,.s-pending{color:#b4c8dd}
+.bt-correction{margin-top:.9rem;padding:1rem;background:#12253a;border-radius:8px}
+.bt-bin-item{display:flex;align-items:center;justify-content:space-between;margin-top:.65rem}
+.nfl-tracker [data-notice]:not(:empty){border:1px solid #32605c;border-radius:8px;padding:.65rem .9rem;margin:0 0 1rem;color:#a5f4df;background:#102a2c}
+@media(max-width:900px){.bt-summary{grid-template-columns:1fr 1fr}.bt-summary .bt-record-summary{grid-column:1/-1;border-left:0;border-top:1px solid var(--bt-line);margin-top:.75rem;padding-top:.7rem}.bt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.bt-panel{padding:.9rem}.bt-grid{gap:.6rem}.bt-leg{padding:.7rem}.bt-leg .bt-grid>label:nth-child(1),.bt-leg .bt-grid>label:nth-child(4){grid-column:1/-1}.bt-grid>label.bt-wide{grid-column:1/-1}.bt-summary>div{padding:0 .75rem}.bt-section-head{gap:.8rem}.bt-summary small{font-size:.72rem}}

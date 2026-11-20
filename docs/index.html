@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080f1b">
+  <meta name="description" content="NFL defensive allowances, weekly player projections, model backtests and a private bet tracker.">
+  <title>Matchup Lab — NFL Defensive Intelligence</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./tracker.css">
+</head>
+<body>
+  <div class="site">
+    <aside class="rail">
+      <a class="identity" href="./" aria-label="NFL Matchup Lab"><span class="identity-icon">M<span class="identity-dot"></span></span><span class="identity-text">MATCHUP<span>LAB</span><small>NFL INTELLIGENCE</small></span></a>
+      <div class="rail-title">WORKSPACE</div>
+      <nav class="sidebar-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-page="defence"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V9m6 11V4m6 16v-7m6 7V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span>Defence by role</span></button>
+        <button class="nav-link" data-page="matchups"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="m3 7 8-4 10 4v9l-10 5-8-5V7Zm8-4v9m-8-5 8 5 10-5m-10 5v9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span>Game matchups</span><span class="nav-counter" id="nav-count">0</span></button>
+        <button class="nav-link" data-page="performance"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V11h5v9H3Zm7 0V5h5v15h-5Zm7 0v-8h4v8h-4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span>Model performance</span></button>
+        <button class="nav-link" data-page="bets"><span class="nav-icon">＋</span><span>Bet tracker</span></button>
+      </nav>
+      <div class="rail-split"></div>
+      <div class="rail-title">MODEL INPUTS</div>
+      <div class="source-block"><span class="source-dot"></span>Player box scores</div>
+      <div class="source-block"><span class="source-dot"></span>Team availability</div>
+      <div class="source-block"><span class="source-dot"></span>Player role classification</div>
+      <div class="rail-footer"><span class="rail-footer-icon">◎</span><div>NFL seasons<br><span>All times in Melbourne</span></div></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb"><span>NFL / ANALYTICS</span><span class="chev">›</span><strong id="crumb-page">Defence by role</strong></div>
+        <div class="top-actions"><span class="live-pill" id="live-pill"><span></span>LOADING</span><button class="refresh-btn" id="refresh-btn" type="button"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.2 8A7 7 0 0 1 18 6.6L20 12M4 12l2 5.4A7 7 0 0 0 17.8 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="refresh-text">Reload latest data</span></button></div>
+      </header>
+      <div class="content">
+        <div id="error-banner" class="error-banner hidden" role="alert"></div>
+        <section class="page" id="page-defence">
+          <div class="hero"><div class="eyebrow"><span class="eyebrow-rule"></span>DEFENSIVE MATCHUP INTELLIGENCE</div><h1>Defence, <em>decoded by role.</em></h1><p>Compare what each NFL defence allows an opposing player against the league average for the same role.</p></div>
+          <div class="metric-strip" id="heat-metrics"></div>
+          <section class="panel heatmap-panel">
+            <div class="panel-head"><div><div class="section-kicker">DEFENSIVE MATCHUPS</div><h2>Allowed above or below average</h2></div><span class="head-tag">PER PLAYER-GAME</span></div>
+            <div class="heatmap-toolbar"><label>Week <select class="week-picker"></select></label><label>Melbourne day <select class="day-picker"></select></label><label>Statistic <select id="heat-stat"></select></label><label>Position <select id="heat-position"><option value="">All positions</option><option>QB</option><option>RB</option><option>WR</option><option>TE</option></select></label></div>
+            <p class="heatmap-intro" id="heat-intro">Select any cell to see its calculation and matching opponents.</p>
+            <div class="heatmap-scroll" role="region" tabindex="0" aria-label="Defensive allowance heatmap, scroll horizontally for all 32 teams"><table id="heatmap-table" class="heatmap-table"></table></div>
+            <div class="heatmap-legend"><span><i class="legend-positive"></i>More allowed</span><span><i class="legend-negative"></i>Fewer allowed</span><span>· Fewer than 8 player-games</span><span>— No sample</span><span>Scroll across for all 32 defences</span></div>
+            <div id="heatmap-detail" class="heatmap-detail" aria-live="polite">Select a cell to inspect its averages and opposing players.</div>
+          </section>
+          <details class="panel disclosure"><summary>Selected fixtures &amp; Melbourne kickoff times</summary><div id="heat-slate"></div></details>
+          <details class="panel disclosure"><summary>Role definitions &amp; eligibility</summary><div id="definitions"></div></details>
+        </section>
+        <section class="page hidden" id="page-matchups">
+          <div class="hero"><div class="eyebrow"><span class="eyebrow-rule"></span>PLAYER MATCHUP ANALYSIS</div><h1>Find the <em>mismatches.</em></h1><p>See where player production could move above or below baseline. These projections measure matchup effects. A betting line and a price are separate inputs.</p></div>
+          <div class="metric-strip" id="match-metrics"></div>
+          <section class="panel"><div class="panel-head"><div><div class="section-kicker">WEEKLY SCANNER</div><h2>Player matchup signals</h2></div></div>
+          <div class="heatmap-toolbar"><label>Week <select class="week-picker"></select></label><label>Melbourne day <select class="day-picker"></select></label><label>Fixture <select id="game-picker"></select></label><label>Signal <select id="direction"><option value="">Both directions</option><option>Favourable</option><option>Unfavourable</option></select></label><label>Statistic <select id="signal-stat"></select></label></div>
+          <div id="signal-list" class="signals"></div></section>
+        </section>
+        <section class="page hidden" id="page-performance">
+          <div class="hero"><div class="eyebrow"><span class="eyebrow-rule"></span>HISTORICAL MODEL AUDIT</div><h1>Model <em>performance.</em></h1><p>Compare the model’s pre-game estimates with a simple player-average forecast on the same player-games.</p></div>
+          <section class="panel"><div class="panel-head"><div><div class="section-kicker">CHRONOLOGICAL BACKTEST</div><h2>Out-of-sample results</h2></div></div><div id="performance-metrics"></div></section>
+          <section class="panel"><div class="panel-head"><h2>Methodology &amp; limitations</h2></div><div class="explain" id="performance-notes"></div></section>
+        </section>
+        <section class="page hidden" id="page-bets">
+          <div class="hero"><div class="eyebrow"><span class="eyebrow-rule"></span>PRIVATE BET TRACKER</div><h1>Bets, <em>tracked in units.</em></h1><p>Record singles and multis, settle player markets and review your daily results.</p></div>
+          <div id="bet-tracker"></div>
+        </section>
+        <details class="panel disclosure" id="source-panel"><summary>Data sources &amp; update coverage</summary><div id="coverage"></div></details>
+        <footer class="footer"><span>NFL MATCHUP LAB <b>·</b> DEFENSIVE ANALYTICS</span><span id="footer-update">Loading published snapshot…</span></footer>
+      </div>
+    </main>
+  </div>
+  <script defer src="./tracker.js"></script>
+  <script defer src="./app.js"></script>
+</body>
+</html>
