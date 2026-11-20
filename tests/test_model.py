@@ -31,7 +31,7 @@ class ModelChecks(unittest.TestCase):
 
     def test_raw_differences_and_qualifying_zeros(self):
         result = analyse(self.data)
-        cell = result['weeks']['2025-6']['cells']['wr']['receiving_yards']['B']
+        cell = result['weeks']['2025-6']['cells']['wr_unknown']['receiving_yards']['B']
         self.assertEqual(cell, dict(n=10, leagueN=20, avg=50, league=30, diff=20))
         self.assertFalse(eligible(dict(position='RB', attempts=0, targets=0, carries=0)))
         self.assertTrue(eligible(dict(position='WR', targets=1, receptions=0)))
@@ -79,7 +79,18 @@ class ModelChecks(unittest.TestCase):
         rows = [dict(carries=14,targets=8)] * 5
         self.assertEqual(role_for('RB', rows, None, '1'), 'rb_lead')
         self.assertEqual(role_for('RB', rows[:2], None, '1'), 'rb_unknown')
-        self.assertEqual(role_for('WR', [], None, '1'), 'wr')
+        self.assertEqual(role_for('WR', [], None, '1'), 'wr_unknown')
+
+
+    def test_wr_target_depth_uses_weighted_opportunities(self):
+        def role(air, targets=(8, 2, 2)):
+            rows = [dict(receiving_air_yards=a, targets=t) for a, t in zip(air, targets)]
+            return role_for('WR', rows, None, 'receiver')
+        self.assertEqual(role((10,40,40)), 'wr_short')
+        self.assertEqual(role((16,40,40)), 'wr_intermediate')
+        self.assertEqual(role((76,40,40)), 'wr_deep')
+        self.assertEqual(role((76,None,40)), 'wr_unknown')
+        self.assertEqual(role((76,40,40), (6,2,2)), 'wr_unknown')
 
 
 if __name__ == '__main__':

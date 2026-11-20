@@ -74,7 +74,7 @@ test('published fixture and week files feed heatmap, matchup scanner and perform
   assert.ok(realWeek.players.length);
   assert.ok(ui.id('signal-list').innerHTML.includes('signal-game'));
   assert.ok(ui.id('performance-metrics').innerHTML.includes('Player-games'));
-  const available = realWeek.players.find(p=>p.position==='WR' && realWeek.cells.wr?.receiving_yards?.[p.opponent]);
+  const available = realWeek.players.find(p=>p.position==='WR' && realWeek.cells[p.role]?.receiving_yards?.[p.opponent]);
   assert.ok(available);
   const b=element(); b.dataset={role:available.role,team:available.opponent};
   ui.id('heatmap-table').dispatch('click',{target:{closest:()=>b}});

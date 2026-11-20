@@ -8,7 +8,9 @@ ROLES = (
     ("qb_pocket", "Lower-rush QB", "QB"), ("qb_mobile", "Mobile QB", "QB"),
     ("qb_unknown", "QB · limited history", "QB"), ("rb_lead", "Lead rushing back", "RB"),
     ("rb_receiving", "Receiving back", "RB"), ("rb_rotation", "Rotational back", "RB"),
-    ("rb_unknown", "RB · limited history", "RB"), ("wr", "Wide receiver", "WR"),
+    ("rb_unknown", "RB · limited history", "RB"), 
+    ("wr_short", "Short-target receiver", "WR"), ("wr_intermediate", "Intermediate-target receiver", "WR"),
+    ("wr_deep", "Deep-target receiver", "WR"), ("wr_unknown", "WR · limited history", "WR"),
     ("te_primary", "Primary receiving TE", "TE"), ("te_secondary", "Secondary TE", "TE"),
     ("te_unknown", "TE · limited history", "TE"),
 )
@@ -59,7 +61,14 @@ def eligible(row):
 
 def role_for(position, history, tight_end_leader, player):
     if position == "WR":
-        return "wr"
+        targeted = [r for r in history if (number(r, "targets") or 0) > 0]
+        targets = sum(r["targets"] for r in targeted)
+        if len(targeted) < 3 or targets < 12 or any(number(r, "receiving_air_yards") is None for r in targeted):
+            return "wr_unknown"
+        depth = sum(r["receiving_air_yards"] for r in targeted) / targets
+        if depth < 8:
+            return "wr_short"
+        return "wr_intermediate" if depth < 13 else "wr_deep"
     if len(history) < 3:
         return position.lower() + "_unknown"
     if position == "QB":
@@ -308,7 +317,7 @@ def describe(stat, role, diff, n, components, injury_mate, injury_delta, rows):
 METHODS = [
     {"title":"Who qualifies","body":"Count one player once per final, verified game and market. A QB needs at least five pass attempts or three carries. A back, receiver or tight end needs at least one carry or target. A recorded zero stays in the average when that player qualifies. Missing stats are excluded. These are averages conditional on involvement."},
     {"title":"Position and role","body":"Roles use up to five earlier qualifying games with the same team. QBs averaging four or more official carries are mobile (carries may include kneels). Lower-rush QB is a proxy for pocket usage. Backs averaging 10+ carries are lead backs. Of the rest, backs averaging 2.5+ targets and at least 0.45 targets per carry are receiving backs. The rest are rotational. The TE with the highest prior target average among eligible teammates is primary. QBs, RBs and TEs with fewer than three qualifying games in that window have a limited-history role."},
-    {"title":"Receiver coverage","body":"Wide receivers share a single row. Free box scores record targets and yards but cannot reliably identify slot or outside alignment, deep routes run, or route participation. Each historical player-game belongs to exactly one role."},
+    {"title":"Receiver coverage","body":"WR roles use average target depth (total intended air yards divided by total targets) from prior games with the same team in the five-game window. Short is below 8 yards per target, intermediate is 8 to under 13, and deep is 13 or more. A receiver needs 12 targets over at least three targeted games with complete air-yard data. Other receivers appear under limited history. Target depth describes where passes were aimed. Slot and outside alignment and untargeted routes require separate tracking data. Each player-game counts once."},
     {"title":"Reading the heatmap","body":"Each cell subtracts the pooled league average from the defence’s average for the same role and market over the preceding 365 days. Every qualifying player-game has equal weight. Green means more allowed and red means fewer. Cells with fewer than eight player-games have small samples. The predictor continuously shrinks the allowance by n/(n+12)."},
     {"title":"Forecast construction","body":"The baseline is the player’s last 12 eligible games within a year, with at least three measured values. The forecast adds 35% of the shrunk role allowance, 27% of the shrunk opponent-adjusted difference, 10% of the shrunk yards-per-opportunity difference at the player’s usual volume, 16% of the last-three change, a capped pass/rush volume adjustment, and small capped shifts for recent carries, target share or scoring-area involvement when available. Opponent adjustments compare each prior opponent’s result with their own prior baseline. Volume uses pass attempts and rushes allowed as a pace and game-script proxy. Touchdown adjustments are reduced by 45%."},
     {"title":"Scoring, workload and venue","body":"Touchdowns scored exclude passing touchdowns thrown. Scoring is infrequent, so this view has lower confidence. Carries, targets, target share and red-zone involvement are shown where available. Team pace uses pass/rush volume rather than seconds per play. Venue, line injuries and defensive injuries are context. For an upcoming open-air game with forecast gusts of 25+ mph, passing and receiving yardage are conservatively trimmed 1–2.5% of baseline. This estimate is unvalidated. Unknown or closed roofs receive no adjustment."},
